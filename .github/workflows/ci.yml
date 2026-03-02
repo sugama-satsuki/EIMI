@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Unit Tests
+        run: npm run test:unit
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E Tests
+        env:
+          RAKUTEN_APP_ID: dummy_for_test
+        run: |
+          # Start backend server
+          npx tsx backend/src/index.ts &
+          BACKEND_PID=$!
+
+          # Start frontend dev server (with API proxy to backend)
+          npm run dev -w frontend &
+          FRONTEND_PID=$!
+
+          # Wait for servers to be ready
+          for i in $(seq 1 30); do
+            if curl -s http://localhost:3001/api/nutrients > /dev/null 2>&1 && \
+               curl -s http://localhost:5173 > /dev/null 2>&1; then
+              echo "Servers ready"
+              break
+            fi
+            echo "Waiting for servers... ($i/30)"
+            sleep 1
+          done
+
+          # Run E2E tests
+          npm run test:e2e
+
+          # Cleanup
+          kill $BACKEND_PID $FRONTEND_PID 2>/dev/null || true
