@@ -1,35 +1,21 @@
-import { useState, useEffect, useCallback } from 'react';
-import { fetchNutrients, searchFoodsByNutrient } from '../services/api';
-import type { NutrientInfo, FoodSearchResult } from '../types/nutrient';
+import { useState, useCallback } from 'react';
+import { getNutrients, searchFoodsByNutrient } from '../services/nutrientService.ts';
+import type { NutrientInfo, FoodSearchResult } from '../types/nutrient.ts';
 
 export function useNutrientSearch() {
-  const [nutrients, setNutrients] = useState<NutrientInfo[]>([]);
+  const [nutrients] = useState<NutrientInfo[]>(getNutrients());
   const [selectedNutrient, setSelectedNutrient] = useState('');
   const [foods, setFoods] = useState<FoodSearchResult[]>([]);
   const [unit, setUnit] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [nutrientsLoading, setNutrientsLoading] = useState(true);
 
-  useEffect(() => {
-    fetchNutrients()
-      .then((data) => {
-        setNutrients(data);
-      })
-      .catch((e) => {
-        setError(e instanceof Error ? e.message : '栄養素一覧の取得に失敗しました');
-      })
-      .finally(() => {
-        setNutrientsLoading(false);
-      });
-  }, []);
-
-  const search = useCallback(async () => {
+  const search = useCallback(() => {
     if (!selectedNutrient) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await searchFoodsByNutrient(selectedNutrient);
+      const data = searchFoodsByNutrient(selectedNutrient);
       setFoods(data.foods);
       setUnit(data.nutrient.unit);
     } catch (e) {
@@ -47,7 +33,7 @@ export function useNutrientSearch() {
     foods,
     unit,
     loading,
-    nutrientsLoading,
+    nutrientsLoading: false,
     error,
     search,
   };

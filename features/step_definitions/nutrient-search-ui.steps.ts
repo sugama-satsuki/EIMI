@@ -2,58 +2,13 @@ import { Given, When, Then, Before, After } from '@cucumber/cucumber';
 import assert from 'node:assert';
 import type { UIWorld } from '../support/ui-world.js';
 
-// Mock data
-const mockNutrients = [
-  { key: 'vitamin_c', label: 'ビタミンC', unit: 'mg' },
-  { key: 'iron', label: '鉄', unit: 'mg' },
-  { key: 'calcium', label: 'カルシウム', unit: 'mg' },
-];
-
-const mockFoodSearchResponse = {
-  nutrient: { key: 'vitamin_c', label: 'ビタミンC', unit: 'mg' },
-  foods: [
-    { foodId: 1, foodName: 'アセロラ', value: 1700, unit: 'mg' },
-    { foodId: 2, foodName: 'グァバ', value: 220, unit: 'mg' },
-    { foodId: 3, foodName: 'レモン', value: 100, unit: 'mg' },
-  ],
-  total: 3,
-  limit: 20,
-  offset: 0,
-};
-
-function createMockFetch() {
-  return (url: string | URL | Request) => {
-    const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.href : url.url;
-    if (urlStr.includes('/api/nutrients')) {
-      return Promise.resolve(
-        new Response(JSON.stringify({ nutrients: mockNutrients }), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      );
-    }
-    if (urlStr.includes('/api/foods/search')) {
-      return Promise.resolve(
-        new Response(JSON.stringify(mockFoodSearchResponse), {
-          status: 200,
-          headers: { 'Content-Type': 'application/json' },
-        }),
-      );
-    }
-    return Promise.resolve(
-      new Response('Not Found', { status: 404 }),
-    );
-  };
-}
+// No mock data needed — useNutrientSearch now uses local data (nutrientService.ts)
 
 Before(async function (this: UIWorld) {
   this.setupDom();
 
   // Enable React act() environment
   (globalThis as Record<string, unknown>).IS_REACT_ACT_ENVIRONMENT = true;
-
-  // Set up fetch mock using Node.js global Response (not jsdom)
-  (globalThis as Record<string, unknown>).fetch = createMockFetch();
 });
 
 After(function (this: UIWorld) {
@@ -93,7 +48,7 @@ Given('栄養素検索結果が表示されている', async function (this: UIW
 
   await renderPage(this);
 
-  // Select vitamin C
+  // Select vitamin C (real nutrient key is 'vitC')
   const select = this.dom.window.document.querySelector('[data-testid="nutrient-select"]') as HTMLSelectElement;
   assert.ok(select, 'nutrient-select not found');
 
@@ -102,7 +57,7 @@ Given('栄養素検索結果が表示されている', async function (this: UIW
       this.dom.window.HTMLSelectElement.prototype,
       'value',
     )!.set!;
-    nativeInputValueSetter.call(select, 'vitamin_c');
+    nativeInputValueSetter.call(select, 'vitC');
     select.dispatchEvent(new this.dom.window.Event('change', { bubbles: true }));
   });
 
@@ -219,10 +174,12 @@ Then('食材名が検索欄に入力されている', function (this: UIWorld) {
     href.includes('ingredient='),
     `Expected href to include ingredient=, got: ${href}`,
   );
-  // Verify the first food name is in the URL
+  // Verify the ingredient parameter has a non-empty food name
+  const params = new URLSearchParams(href.split('?')[1]);
+  const ingredient = params.get('ingredient');
   assert.ok(
-    href.includes(encodeURIComponent('アセロラ')),
-    `Expected href to include encoded food name, got: ${href}`,
+    ingredient && ingredient.length > 0,
+    `Expected ingredient to have a value, got: ${ingredient}`,
   );
 });
 

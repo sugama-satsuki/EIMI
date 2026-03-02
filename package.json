@@ -14,14 +14,19 @@
     "test:backend": "cucumber-js --require-module tsx --require 'features/step_definitions/nutrient-search.steps.ts' --require 'features/step_definitions/recipe-search.steps.ts' --require 'features/support/world.ts' 'features/nutrient-search.feature' 'features/recipe-search.feature'",
     "test:frontend:nutrient": "cucumber-js --require-module tsx --require 'features/step_definitions/nutrient-search-ui.steps.ts' --require 'features/support/ui-world.ts' 'features/nutrient-search-ui.feature'",
     "test:frontend:recipe": "cucumber-js --require-module tsx --require 'features/step_definitions/recipe-search-ui.steps.ts' --require 'features/support/ui-world.ts' 'features/recipe-search-ui.feature'",
-    "test:frontend": "npm run test:frontend:nutrient && npm run test:frontend:recipe",
+    "test:frontend:nutrient-service": "cucumber-js --require-module tsx --require 'features/step_definitions/nutrient-service.steps.ts' 'features/nutrient-service.feature'",
+    "test:frontend": "npm run test:frontend:nutrient && npm run test:frontend:recipe && npm run test:frontend:nutrient-service",
     "test:unit": "npm run test:backend && npm run test:frontend",
     "test:e2e": "cucumber-js --config e2e/cucumber.js",
-    "test": "npm run test:unit && npm run test:e2e"
+    "test": "npm run test:unit && npm run test:e2e",
+    "dev:cf": "wrangler pages dev --proxy 5173 -- npm run dev -w frontend",
+    "deploy": "npm run build -w frontend && wrangler pages deploy frontend/dist"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260305.0",
     "@playwright/test": "^1.58.2",
     "concurrently": "^9.1.2",
-    "playwright": "^1.58.2"
+    "playwright": "^1.58.2",
+    "wrangler": "^4.69.0"
   }
 }
