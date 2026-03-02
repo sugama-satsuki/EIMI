@@ -4,7 +4,7 @@ import type { E2EWorld } from '../support/world.js';
 
 setDefaultTimeout(30000);
 
-const BASE_URL = 'http://localhost:5173';
+const BASE_URL = process.env.E2E_BASE_URL || 'http://localhost:5173';
 
 Before(async function (this: E2EWorld) {
   await this.launchBrowser();
